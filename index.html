@@ -126,6 +126,7 @@ input[type="range"] { accent-color: var(--accent); width: 200px; max-width: 100%
 
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 14px; }
 .grid2 > *, .forms > * { min-width: 0; }
+.grid2:has(> .scroll-x), .grid2:has(> .hs-box) { grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr)); }
 .scroll-x { overflow-x: auto; }
 table.data { border-collapse: collapse; font-size: .88rem; width: 100%; font-variant-numeric: tabular-nums; }
 table.data th, table.data td { text-align: right; padding: 5px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
@@ -260,6 +261,7 @@ footer.credits { max-width: 900px; margin-top: 40px; padding-top: 16px; border-t
 .hs-bar.drag .hs-thumb{cursor:grabbing}
 .hs-nonative{scrollbar-width:none}.hs-nonative::-webkit-scrollbar{height:0;display:none}
 .hs-box{min-width:0;max-width:100%}
+.hs-bar.hs-top{margin:0 0 6px}
 </style>
 </head>
 <body>
@@ -1586,7 +1588,7 @@ if (savedKey) { keyIn.value = savedKey; keyRemember.checked = true; connectKerne
     b.setAttribute('role', 'scrollbar'); b.setAttribute('aria-orientation', 'horizontal');
     const strip = el.closest('.hs-wrap');
     if (strip) strip.after(b);
-    else { const box = document.createElement('div'); box.className = 'hs-box'; el.before(box); box.appendChild(el); box.appendChild(b); }
+    else { const box = document.createElement('div'); box.className = 'hs-box'; el.before(box); box.appendChild(el); if (el.offsetHeight > 220) { box.insertBefore(b, el); b.classList.add('hs-top'); } else box.appendChild(b); }
     const upd = () => {
       const over = el.scrollWidth - el.clientWidth;
       if (over <= 2 || el.offsetParent === null) { b.hidden = true; el.classList.remove('hs-nonative'); return; }
