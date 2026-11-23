@@ -635,11 +635,11 @@ footer.credits { max-width: 900px; margin-top: 40px; padding-top: 16px; border-t
     <div class="cell-label"><b>Δ notation</b> the notebook’s delta system, rebuilt with built-ins</div>
     <p>With “Δ notation” ticked on a cell (the default), you can write Laplacians the way the notebook does. A short definition is added in front of your code before it runs, and derivatives in the output are shown as <code>f^(0,0,2)[x,y,z]</code> rather than <code>Derivative[0,0,2][f][x,y,z]</code>.</p>
     <div class="scroll-x"><table class="data"><thead><tr><th class="l">You type</th><th class="l">Means</th></tr></thead><tbody>
-      <tr><td class="l">Δf, Δ f, ∇²f</td><td class="l">Laplacian of f[x,y,z] (a bare f means f applied to 𝒶𝓇𝓈)</td></tr>
+      <tr><td class="l">Δf, Δ f, ∇²f</td><td class="l">Laplacian of f[x,y,z] (a bare f means f applied to 𝒶𝓇ℊ𝓈)</td></tr>
       <tr><td class="l">Δ²f, Δ^2 f, Δ2f, Δ(2)f</td><td class="l">Δ(Δf), the notebook’s Δ2f and \[CapitalDelta](5)f forms</td></tr>
       <tr><td class="l">Δ[n][expr], Δ[n]@expr</td><td class="l">n-th power of the Laplacian of any expression</td></tr>
       <tr><td class="l">𝜟⊗f, 𝜟⊗(𝜟⊗f[x,y,z])</td><td class="l">the §5.3 operator 𝜟 = ∂xx + ∂yy + ∂zz applied once or repeatedly</td></tr>
-      <tr><td class="l">𝒶𝓇𝓈 = {x,y,z,t};</td><td class="l">change the variables (and so the dimension 𝒹), as in §3.2</td></tr>
+      <tr><td class="l">𝒶𝓇ℊ𝓈 = {x,y,z,t};</td><td class="l">change the variables (and so the dimension 𝒹), as in §3.2</td></tr>
       <tr><td class="l">𝒞enter, 𝒹, ℋelp</td><td class="l">{x0,y0,z0,…}, the dimension, and the list of these symbols</td></tr>
     </tbody></table></div>
     <p class="muted">Untick “Δ notation” to send your code exactly as typed, for example if you use Δ as an ordinary variable name.</p>
@@ -1177,9 +1177,9 @@ Quiet@{Simplify@Limit[2*3 int/(4 Pi e^2 e^2), e -> 0],   (* Theorem 3.1: finite 
 {Laplacian[1/r^2, {r, θ, φ}, "Spherical"],
  Plot3D[x^2 - y^2, {x, -1, 1}, {y, -1, 1}, PlotLabel -> "x^2 - y^2: harmonic saddle"]}`]
 };
-SNIPS.delta = ["Δ notation: Δⁿf, 𝜟⊗f and 𝒶𝓇𝓈", String.raw`(* the notebook's delta system: bare f means f[x,y,z] *)
+SNIPS.delta = ["Δ notation: Δⁿf, 𝜟⊗f and 𝒶𝓇ℊ𝓈", String.raw`(* the notebook's delta system: bare f means f[x,y,z] *)
 {Δf, Δ²f, 𝜟⊗𝜟⊗f, Δ²f - 𝜟⊗(𝜟⊗f), Δ(x^2 y^2 z^2)}
-(* try: 𝒶𝓇𝓈 = {x, y, z, t}; Δf *)`];
+(* try: 𝒶𝓇ℊ𝓈 = {x, y, z, t}; Δf *)`];
 const WL_PRELUDE = String.raw`\[ScriptA]\[ScriptR]\[ScriptG]\[ScriptS] = {x, y, z};
 \[ScriptD] := Length[\[ScriptA]\[ScriptR]\[ScriptG]\[ScriptS]];
 \[ScriptCapitalC]enter := Symbol[ToString[#] <> "0"] & /@ \[ScriptA]\[ScriptR]\[ScriptG]\[ScriptS];
@@ -1202,13 +1202,22 @@ function deltaPre(code) {
   c = c.replace(/Δ(?=\s*[A-Za-z(𝜟])/g, "Δ[1]@");
   return c;
 }
-function wlPrepare(code, force) { return (deltaOn || force) ? WL_PRELUDE + deltaPre(code) : code; }
+// Unicode math-script letters (𝒶 U+1D4B6 …, 𝒞 U+1D49E …) are not the same characters as Wolfram's \[ScriptA], \[ScriptCapitalC] …
+// (private-use codes in Wolfram 15), so 𝒶𝓇ℊ𝓈 typed on the page would be a different symbol from the prelude's. Send the named forms.
+function scriptNames(code) {
+  return code.replace(/𝒶𝓇𝓈/g, "𝒶𝓇ℊ𝓈").replace(/[\u{1D49C}-\u{1D4CF}]/gu, ch => {
+    const k = ch.codePointAt(0);
+    return k >= 0x1D4B6 ? "\\[Script" + String.fromCharCode(65 + k - 0x1D4B6) + "]"
+                        : "\\[ScriptCapital" + String.fromCharCode(65 + k - 0x1D49C) + "]";
+  });
+}
+function wlPrepare(code, force) { return scriptNames((deltaOn || force) ? WL_PRELUDE + deltaPre(code) : code); }
 function wlPost(text) {
   if (!deltaOn) return text;
   return text.replace(/Derivative\[([\d,\s]+)\]\[([A-Za-z$][\w$]*)\]/g, (m, idx, fn) => `${fn}^(${idx.replace(/\s+/g, "")})`);
 }
 const SYMS = {
-  wl: [["Δ", "Δ"], ["Δ²", "Δ²"], ["Δ³", "Δ³"], ["Δ[n]@", "Δ[2]@"], ["𝜟⊗", "𝜟⊗"], ["⊗", "⊗"], ["∇²", "∇²"], ["𝒶𝓇𝓈", "𝒶𝓇𝓈"], ["𝒞enter", "𝒞enter"], ["∈", "∈"], ["α", "α"], ["θ", "θ"], ["φ", "φ"], ["ε", "ε"], ["π", "π"], ["∞", "∞"], ["∂", "D[f[x, y, z], {x, 2}]"]],
+  wl: [["Δ", "Δ"], ["Δ²", "Δ²"], ["Δ³", "Δ³"], ["Δ[n]@", "Δ[2]@"], ["𝜟⊗", "𝜟⊗"], ["⊗", "⊗"], ["∇²", "∇²"], ["𝒶𝓇ℊ𝓈", "𝒶𝓇ℊ𝓈"], ["𝒞enter", "𝒞enter"], ["∈", "∈"], ["α", "α"], ["θ", "θ"], ["φ", "φ"], ["ε", "ε"], ["π", "π"], ["∞", "∞"], ["∂", "D[f[x, y, z], {x, 2}]"]],
   chat: [["Δ", "Δ"], ["Δ²", "Δ²"], ["Δⁿ", "Δⁿ"], ["𝜟⊗", "𝜟⊗"], ["∇²", "∇²"], ["∇", "∇"], ["∂", "∂"], ["∮", "∮"], ["∫", "∫"], ["∑", "∑"], ["α", "α"], ["θ", "θ"], ["φ", "φ"], ["ε", "ε"], ["π", "π"], ["∞", "∞"], ["→", "→"], ["≈", "≈"], ["²", "²"]]
 };
 function insertAt(ta, text) {
@@ -1360,7 +1369,7 @@ window.addEventListener("hashchange", () => show(location.hash.slice(1)));
 
 /* ---------- Ask the TA (sample capability) ---------- */
 const NOTEBOOK_CONTEXT = String.raw`SOURCE NOTEBOOK: "Where did Laplacian come from? Laplacian things... Computational conception of Laplacian Operator (fully coded) β1.0", Computational Classnotes (CC BY-NC-SA 4.0), Wolfram Mathematica 15. Method ("universal paradigm", "codexplanation"): build proofs by symbolic construction using only commutativity, associativity, distributivity, differentiability, integrability, Taylor polynomial form, O[], Gamma, Factorial, Factorial2, limits.
-System symbols: 𝒹 = dimension (default 3), 𝓅 = 2 (Taylor degree 2𝓅 = 4 per variable), αs = {α1,α2,α3} derivative indices, ɑ = Σαi, 𝒶𝓇𝓈 = {x,y,z}, 𝒞enter = {x0,y0,z0}; f^(α1,α2,α3)[x0,y0,z0] = mixed partial. ℒ𝒜𝒫init[] initialises; ℋelp lists symbols.
+System symbols: 𝒹 = dimension (default 3), 𝓅 = 2 (Taylor degree 2𝓅 = 4 per variable), αs = {α1,α2,α3} derivative indices, ɑ = Σαi, 𝒶𝓇ℊ𝓈 = {x,y,z}, 𝒞enter = {x0,y0,z0}; f^(α1,α2,α3)[x0,y0,z0] = mixed partial. ℒ𝒜𝒫init[] initialises; ℋelp lists symbols.
 §1 Taylor construction: f̂[x] = Σ a_n (x-x0)^n; matching n derivatives at x0 forces a_n = f^(n)(x0)/n!. Multivariate series = Normal@Series[f[x,y,z],{x,x0,4},{y,y0,4},{z,z0,4}]. Helpers seriesDerv[], seriesDervSum[] (filter by sum of degrees, optional even filter), Coefficient[series, f^(1,3,2)] = (x-x0)(y-y0)^3(z-z0)^2/12 = 1/∏αi!. Curried Derivative[Sequence@@αs][f][Sequence@@args].
 §2 meanSurfaceValue = SurfaceIntegrate[series, Sphere[𝒞enter,r]]/Area. Only even derivative orders survive (Note 2.1.1). Coefficient of r^2 = (1/6)(fxx+fyy+fzz); r^4 coefficient = (1/120)Δ²f; r^3 coefficient 0. Theorem 2.6: Δf(x0) = lim_{r→0} (2𝒹/r²)(mean - f(x0)). Definition 2.8 universal paradigm. TODO 2.9: some books write r^(d-1) instead of r^2.
 §3 integrate (series - f0) and normalise by Area·r²/(2d): Theorem 3.1. §3.2 4D sphere (area 2π²r³) gives Δ in 4D with 2𝒹 = 8; uses CloudSymbol result.
@@ -1372,7 +1381,7 @@ System symbols: 𝒹 = dimension (default 3), 𝓅 = 2 (Taylor degree 2𝓅 = 4 
 §9 volume-mesh graph Laplacian: MeshConnectivityGraph of discretised Cuboid and FilledTorus (11360 vertices, mean degree 12.3), KirchhoffMatrix·f / VertexDegree: 1/r → max 0.86 min -0.29 (approaches 0 with refinement), 1/r² → max 15.5 min -5.6.
 Coda: "If you are an average guy, then your Laplacian is 0" — stadium analogy: your height/income equals the average of those around you; a windfall spreads and tapers (diffusion).
 References: Ovall "The Laplacian and Mean and Extreme Values"; author's earlier notebooks on generalised-function derivatives and Hamiltonians/Lagrangians (graph Lagrangian for CO2 and benzene).`;
-const DELTA_RULES = `\n\nDELTA NOTATION (the notebook's delta system). The student may write and you should read and use: Δf or ∇²f = Laplacian of f[x,y,z] (a bare f means f applied to the current variables 𝒶𝓇𝓈, default {x,y,z}); Δ²f, Δ^2 f, Δ2f, Δ(2)f = Δ(Δf); Δⁿf = n-th Laplacian power; 𝜟⊗f = the notebook's §5.3 operator 𝜟 = ∂xx+∂yy+∂zz applied to f, so 𝜟⊗𝜟⊗f = Δ²f; f^(a,b,c)[x0,y0,z0] = mixed partial derivative with orders a,b,c (Mathematica Derivative[a,b,c][f][x0,y0,z0]); 𝒞enter = {x0,y0,z0}; 𝒹 = dimension. Write your own answers in this notation where natural, with LaTeX for display math (e.g. $\\Delta^2 f$, $f^{(2,0,0)}$).`;
+const DELTA_RULES = `\n\nDELTA NOTATION (the notebook's delta system). The student may write and you should read and use: Δf or ∇²f = Laplacian of f[x,y,z] (a bare f means f applied to the current variables 𝒶𝓇ℊ𝓈, default {x,y,z}); Δ²f, Δ^2 f, Δ2f, Δ(2)f = Δ(Δf); Δⁿf = n-th Laplacian power; 𝜟⊗f = the notebook's §5.3 operator 𝜟 = ∂xx+∂yy+∂zz applied to f, so 𝜟⊗𝜟⊗f = Δ²f; f^(a,b,c)[x0,y0,z0] = mixed partial derivative with orders a,b,c (Mathematica Derivative[a,b,c][f][x0,y0,z0]); 𝒞enter = {x0,y0,z0}; 𝒹 = dimension. Write your own answers in this notation where natural, with LaTeX for display math (e.g. $\\Delta^2 f$, $f^{(2,0,0)}$).`;
 const RULES = `You are the teaching assistant inside "Laplacian Lab", an interactive study page built on the notebook summarised below. Help the student fully understand the Laplacian in all its forms: continuous (Cartesian, polar, cylindrical, spherical, radial d-dim, Laplace–Beltrami, vector), mean-value definition, discrete stencils, graph and mesh Laplacians, Laplacian matrices, spectra and physics uses.
 How to teach: be precise and patient; derive step by step when asked to derive; connect to the notebook's section numbers and Mathematica code when relevant; prefer intuition first, then the formula, then a tiny worked example. When the student asks for a practice problem, pose ONE problem and wait for their answer; when they answer, check it carefully and explain any error. If something is outside the notebook, say so briefly and answer anyway. Do not invent notebook content that is not in the summary.
 Format: Markdown with short paragraphs, numbered steps for derivations, and LaTeX math in $...$ (inline) or $$...$$ (display). Keep most answers under 350 words unless a full derivation is requested.${DELTA_RULES}
@@ -1380,7 +1389,7 @@ Format: Markdown with short paragraphs, numbered steps for derivations, and LaTe
 ${NOTEBOOK_CONTEXT}`;
 
 let sample = null, turns = [], ctl = null, busy = false, toolsCache = null;
-const WL_RULES = `\n\nYou have a tool, run_wolfram, that evaluates Wolfram Language on a stateless kernel. Use it when a derivation, limit, integral, series or numeric claim would benefit from verification, then state the verified result. The notebook's own package (CloudGet of wolfr.am/1ItEvTTUn, ℒ𝒜𝒫init, seriesDerv, exponentsToDervs) cannot be loaded there; use built-ins such as Series, SurfaceIntegrate, Integrate over Ball, Laplacian, Limit, KirchhoffMatrix. The delta notation is pre-defined in run_wolfram: you may write Δf, Δ²f, Δ[n][expr], 𝜟⊗f, and set 𝒶𝓇𝓈 = {x,y,z,t}. Keep each call short. Wrap noisy limits in Quiet.`;
+const WL_RULES = `\n\nYou have a tool, run_wolfram, that evaluates Wolfram Language on a stateless kernel. Use it when a derivation, limit, integral, series or numeric claim would benefit from verification, then state the verified result. The notebook's own package (CloudGet of wolfr.am/1ItEvTTUn, ℒ𝒜𝒫init, seriesDerv, exponentsToDervs) cannot be loaded there; use built-ins such as Series, SurfaceIntegrate, Integrate over Ball, Laplacian, Limit, KirchhoffMatrix. The delta notation is pre-defined in run_wolfram: you may write Δf, Δ²f, Δ[n][expr], 𝜟⊗f, and set 𝒶𝓇ℊ𝓈 = {x,y,z,t}. Keep each call short. Wrap noisy limits in Quiet.`;
 async function toolsOk() { if (toolsCache !== null) return toolsCache; try { const l = await sample.limits(); toolsCache = !!(l && l.tools); } catch (e) { toolsCache = false; } return toolsCache; }
 function ranHtml(ran) { return ran.map(c => `<p class="muted" style="margin-top:8px">Ran in Wolfram Language:</p><pre class="wl-ran">${esc(c)}</pre>`).join(""); }
 const ERRORS = { rate_limited: "Too many questions in a short time. Wait a moment, then send again.", session_expired: "Your Claude session has expired. Sign in again, then resend.", refused: "The TA couldn’t answer that as phrased. Try rewording the question.", empty_completion: "The TA returned an empty answer. Try asking more specifically.", prompt_too_large: "The conversation is too long. Start a new chat.", upstream_error: "The connection dropped before the answer finished. Send again to retry." };
