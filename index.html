@@ -1527,7 +1527,8 @@ ERRORS.bad_key = "The chat key stored in your Wolfram Cloud was rejected. Store 
 const keyIn = $("#wl-key"), keyStatus = $("#wl-key-status"), keyRemember = $("#wl-key-remember");
 function setKeyStatus(cls, msg) { keyStatus.className = cls; keyStatus.textContent = msg; }
 async function connectKernel() {
-  const k = keyIn.value.trim();
+  const k = keyIn.value.trim().replace(/^\s*["“”'‘’]+|["“”'‘’]+\s*$/g, "").trim();
+  keyIn.value = k;
   if (!WL_URL) { setKeyStatus("err", "Set WOLFRAM_URL in the settings at the top of the file, then reload."); return; }
   if (!k) { setKeyStatus("err", "Enter CCN-KEY first."); keyIn.focus(); return; }
   WL_KEY = k; mcpState = "http";
